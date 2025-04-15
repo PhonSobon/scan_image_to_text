@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <title>បំលែងរូបភាពទៅជាអត្ថបទខ្មែរ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-6">
+
+  <div class="max-w-3xl w-full bg-white shadow-lg rounded-lg p-6 space-y-6">
+    <h1 class="text-2xl font-bold text-center text-blue-800">បំលែងរូបភាពទៅជាអត្ថបទខ្មែរ</h1>
+    <p class="text-center text-sm text-gray-600">ឯកសាររួមមាន៖ PDF, JPEG, PNG, GIF, WEBP (ធំនិយមសរុប 20MB)</p>
+
+    <!-- Upload -->
+    <div class="border-2 border-dashed border-blue-400 p-6 text-center rounded cursor-pointer hover:bg-blue-50 transition" id="uploadArea">
+      <input type="file" id="imageInput" accept="image/*,application/pdf" class="hidden">
+      <p class="text-blue-700 font-medium">សូមចុចដើម្បីជ្រើសរើសឯកសារ</p>
+    </div>
+
+    <!-- OCR result -->
+    <div>
+      <label class="font-semibold text-green-600 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M8 16h8M8 12h8m-8-4h8M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H7l-2 2H3a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        លទ្ធផល
+      </label>
+      <textarea id="ocrResult" class="w-full mt-2 p-4 border border-gray-300 rounded-lg h-48 bg-gray-50" placeholder="លទ្ធផល..."></textarea>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex justify-end gap-4">
+      <button onclick="copyText()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">ចម្លង</button>
+      <button onclick="downloadText()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">ទាញយក TXT</button>
+    </div>
+  </div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const ocrResult = document.getElementById('ocrResult');
+  
+    uploadArea.onclick = () => imageInput.click();
+  
+    imageInput.onchange = async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        ocrResult.value = 'កំពុងស្កេន...';
+  
+        try {
+          // OCR with Tesseract.js
+          const { createWorker } = Tesseract;
+          const worker = createWorker();
+  
+          await worker.load();
+          await worker.loadLanguage('khm');
+          await worker.initialize('khm');
+  
+          const {
+            data: { text }
+          } = await worker.recognize(file);
+          ocrResult.value = text;
+  
+          await worker.terminate();
+        } catch (error) {
+          console.error('Error during OCR:', error);
+          ocrResult.value = 'មានបញ្ហាក្នុងការស្កេន!';
+        }
+      }
+    };
+  
+    function copyText() {
+      if (ocrResult.value) {
+        navigator.clipboard.writeText(ocrResult.value);
+        alert('បានចម្លងអត្ថបទ');
+      } else {
+        alert('មិនមានអត្ថបទដើម្បីចម្លងទេ!');
+      }
+    }
+  
+    function downloadText() {
+      if (ocrResult.value) {
+        const blob = new Blob([ocrResult.value], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'ocr_result.txt';
+        link.click();
+      } else {
+        alert('មិនមានអត្ថបទដើម្បីទាញយកទេ!');
+      }
+    }
+  </script>
+  <!-- Include Tesseract.js CDN -->
+  <script src="https://unpkg.com/tesseract.js@v2.1.4/dist/tesseract.min.js"></script>
+</body>
+</html>
