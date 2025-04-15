@@ -4,10 +4,22 @@
   <meta charset="UTF-8">
   <title>បំលែងរូបភាពទៅជាអត្ថបទខ្មែរ</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Add Khmer and English Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Siemreap&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif; /* Default font for English */
+    }
+    .khmer-text {
+      font-family: 'Siemreap', sans-serif; /* Font for Khmer */
+    }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col items-center p-6">
 
-  <div class="max-w-3xl w-full bg-white shadow-lg rounded-lg p-6 space-y-6">
+  <div class=" khmer-text max-w-3xl w-full bg-white shadow-lg rounded-lg p-6 space-y-6">
     <h1 class="text-2xl font-bold text-center text-blue-800">បំលែងរូបភាពទៅជាអត្ថបទខ្មែរ</h1>
     <p class="text-center text-sm text-gray-600">ឯកសាររួមមាន៖ PDF, JPEG, PNG, GIF, WEBP (ធំនិយមសរុប 20MB)</p>
 
@@ -35,32 +47,48 @@
     </div>
   </div>
 
+  <!-- Notification -->
+  <div id="notification" class="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg hidden">
+    បានចម្លងអត្ថបទ
+  </div>
+
   <script>
     const imageInput = document.getElementById('imageInput');
     const uploadArea = document.getElementById('uploadArea');
     const ocrResult = document.getElementById('ocrResult');
-  
+    const notification = document.getElementById('notification');
+
     uploadArea.onclick = () => imageInput.click();
-  
+
     imageInput.onchange = async (event) => {
       const file = event.target.files[0];
       if (file) {
         ocrResult.value = 'កំពុងស្កេន...';
-  
+
         try {
           // OCR with Tesseract.js
           const { createWorker } = Tesseract;
           const worker = createWorker();
-  
+
           await worker.load();
-          await worker.loadLanguage('khm');
-          await worker.initialize('khm');
-  
+          await worker.loadLanguage('khm+eng'); // Load both Khmer and English languages
+          await worker.initialize('khm+eng');
+
           const {
             data: { text }
           } = await worker.recognize(file);
+
+          // Detect if the text is Khmer or English
+          if (/[\u1780-\u17FF]/.test(text)) {
+            // If Khmer characters are detected
+            ocrResult.classList.add('khmer-text');
+          } else {
+            // If no Khmer characters are detected, use default font
+            ocrResult.classList.remove('khmer-text');
+          }
+
           ocrResult.value = text;
-  
+
           await worker.terminate();
         } catch (error) {
           console.error('Error during OCR:', error);
@@ -68,16 +96,16 @@
         }
       }
     };
-  
+
     function copyText() {
       if (ocrResult.value) {
         navigator.clipboard.writeText(ocrResult.value);
-        alert('បានចម្លងអត្ថបទ');
+        showNotification('បានចម្លងអត្ថបទ');
       } else {
         alert('មិនមានអត្ថបទដើម្បីចម្លងទេ!');
       }
     }
-  
+
     function downloadText() {
       if (ocrResult.value) {
         const blob = new Blob([ocrResult.value], { type: 'text/plain;charset=utf-8' });
@@ -88,6 +116,14 @@
       } else {
         alert('មិនមានអត្ថបទដើម្បីទាញយកទេ!');
       }
+    }
+
+    function showNotification(message) {
+      notification.textContent = message;
+      notification.classList.remove('hidden');
+      setTimeout(() => {
+        notification.classList.add('hidden');
+      }, 3000); // Hide after 3 seconds
     }
   </script>
   <!-- Include Tesseract.js CDN -->
