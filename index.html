@@ -144,6 +144,49 @@
     }
   </script>
   <!-- Include Tesseract.js CDN -->
+  <script>
+    document.addEventListener('paste', async (event) => {
+      const items = event.clipboardData.items;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            ocrResult.value = 'កំពុងស្កេន...';
+  
+            try {
+              // OCR with Tesseract.js
+              const { createWorker } = Tesseract;
+              const worker = createWorker();
+  
+              await worker.load();
+              await worker.loadLanguage('khm+eng'); // Load both Khmer and English languages
+              await worker.initialize('khm+eng');
+  
+              const {
+                data: { text }
+              } = await worker.recognize(file);
+  
+              // Detect if the text is Khmer or English
+              if (/[\u1780-\u17FF]/.test(text)) {
+                // If Khmer characters are detected
+                ocrResult.classList.add('khmer-text');
+              } else {
+                // If no Khmer characters are detected, use default font
+                ocrResult.classList.remove('khmer-text');
+              }
+  
+              ocrResult.value = text;
+  
+              await worker.terminate();
+            } catch (error) {
+              console.error('Error during OCR:', error);
+              ocrResult.value = 'មានបញ្ហាក្នុងការស្កេន!';
+            }
+          }
+        }
+      }
+    });
+  </script>
   <script src="https://unpkg.com/tesseract.js@v2.1.4/dist/tesseract.min.js"></script>
 </body>
 </html>
